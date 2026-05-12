@@ -34,7 +34,8 @@ systemctl start meals-api
 systemctl status meals-api --no-pager || true
 
 echo "==> Installing Nginx config"
-cp "$PROJECT/deploy/nginx-meals.conf" /etc/nginx/sites-available/meals.conf
+sed "s|/opt/meals|$PROJECT|g" "$PROJECT/deploy/nginx-meals.conf" \
+    > /etc/nginx/sites-available/meals.conf
 ln -sf /etc/nginx/sites-available/meals.conf /etc/nginx/sites-enabled/meals.conf
 nginx -t && systemctl reload nginx
 
