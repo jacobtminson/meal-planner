@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Run once on the Debian server to set up the project.
-# Assumes you've already cloned/copied the project to /opt/meals.
+# Works regardless of where the repo was cloned.
 set -e
 
-PROJECT=/opt/meals
+# Resolve project root from this script's location (deploy/ is one level down)
+PROJECT="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
+echo "==> Project root: $PROJECT"
 
 echo "==> Creating virtualenv"
 python3 -m venv "$PROJECT/venv"
