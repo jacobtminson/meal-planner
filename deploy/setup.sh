@@ -18,12 +18,20 @@ echo "==> Initialising database"
 echo "==> Creating log directory"
 mkdir -p "$PROJECT/logs"
 
+echo "==> Creating .env from example if not present"
+if [ ! -f "$PROJECT/.env" ]; then
+    cp "$PROJECT/.env.example" "$PROJECT/.env"
+    echo "    Created $PROJECT/.env — fill in your credentials before restarting the service."
+fi
+
 echo "==> Installing systemd service"
-cp "$PROJECT/deploy/meals-api.service" /etc/systemd/system/
+# Substitute the real project path into the service file
+sed "s|/opt/meals|$PROJECT|g" "$PROJECT/deploy/meals-api.service" \
+    > /etc/systemd/system/meals-api.service
 systemctl daemon-reload
 systemctl enable meals-api
 systemctl start meals-api
-systemctl status meals-api
+systemctl status meals-api --no-pager || true
 
 echo "==> Installing Nginx config"
 cp "$PROJECT/deploy/nginx-meals.conf" /etc/nginx/sites-available/meals.conf
