@@ -24,7 +24,7 @@ def _post(path: str, body: dict) -> dict:
 def import_from_url(url: str) -> Optional[str]:
     """Import a recipe from a URL. Returns the Mealie slug, or None on failure."""
     try:
-        result = _post("/api/recipes/create-from-url", {"url": url})
+        result = _post("/api/recipes/create/url", {"url": url})
         return result.get("slug") or result.get("id")
     except Exception as exc:
         print(f"[mealie] Failed to import {url}: {exc}")
