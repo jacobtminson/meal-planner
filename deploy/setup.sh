@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Run once on the Debian server to set up the project.
+# Assumes you've already cloned/copied the project to /opt/meals.
+set -e
+
+PROJECT=/opt/meals
+
+echo "==> Creating virtualenv"
+python3 -m venv "$PROJECT/venv"
+"$PROJECT/venv/bin/pip" install --upgrade pip
+"$PROJECT/venv/bin/pip" install -r "$PROJECT/requirements.txt"
+
+echo "==> Initialising database"
+"$PROJECT/venv/bin/python" "$PROJECT/db/init_db.py"
+
+echo "==> Creating log directory"
+mkdir -p "$PROJECT/logs"
+
+echo "==> Installing systemd service"
+cp "$PROJECT/deploy/meals-api.service" /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable meals-api
+systemctl start meals-api
+systemctl status meals-api
+
+echo "==> Installing Nginx config"
+cp "$PROJECT/deploy/nginx-meals.conf" /etc/nginx/sites-available/meals.conf
+ln -sf /etc/nginx/sites-available/meals.conf /etc/nginx/sites-enabled/meals.conf
+nginx -t && systemctl reload nginx
+
+echo ""
+echo "Done! Next steps:"
+echo "  1. Copy .env.example to .env and fill in your credentials"
+echo "  2. Run: docker compose -f $PROJECT/docker-compose.yml up -d"
+echo "  3. Get your Mealie API token from the Mealie UI and add it to .env"
+echo "  4. Restart the API: systemctl restart meals-api"
+echo "  5. Add cron jobs: crontab -e"
+echo "     0 8  * * 1  $PROJECT/venv/bin/python $PROJECT/scripts/weekly_curation.py >> $PROJECT/logs/curation.log 2>&1"
+echo "     0 20 * * 3  $PROJECT/venv/bin/python $PROJECT/scripts/deadline_check.py  >> $PROJECT/logs/deadline.log  2>&1"
+echo "  6. Get SSL certs: certbot --nginx -d meals.yourdomain.com -d recipes.yourdomain.com"

@@ -1,0 +1,19 @@
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v2.7.1
+    container_name: mealie
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - mealie-data:/app/data
+    environment:
+      - ALLOW_SIGNUP=false
+      - BASE_URL=https://recipes.yourdomain.com
+      - DEFAULT_EMAIL=admin@yourdomain.com
+      - DEFAULT_PASSWORD=changeme
+      - DB_ENGINE=sqlite
+      - TZ=America/Chicago
+
+volumes:
+  mealie-data:

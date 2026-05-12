@@ -1,0 +1,15 @@
+[Unit]
+Description=Meals swipe API
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/meals
+EnvironmentFile=/opt/meals/.env
+ExecStart=/opt/meals/venv/bin/uvicorn api.main:app --host 127.0.0.1 --port 8765
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

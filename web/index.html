@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dinner Picks</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --card-w: min(92vw, 420px);
+    --card-h: min(80vh, 580px);
+    --radius: 20px;
+    --like-color: #4caf50;
+    --skip-color: #f44336;
+    --bg: #1a1a2e;
+    --surface: #16213e;
+    --text: #e0e0e0;
+    --subtext: #9e9e9e;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  /* ── header ── */
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 16px 20px 8px;
+    background: var(--bg);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+  }
+  #header h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: .5px; }
+  #progress { font-size: .85rem; color: var(--subtext); }
+
+  /* ── card stack ── */
+  #stack {
+    position: relative;
+    width: var(--card-w);
+    height: var(--card-h);
+    margin-top: 70px;
+  }
+
+  .card {
+    position: absolute;
+    inset: 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: 0 8px 32px rgba(0,0,0,.5);
+    cursor: grab;
+    transition: transform .08s ease-out;
+    touch-action: none;
+  }
+
+  .card.is-top { z-index: 5; }
+  .card.is-next { z-index: 4; transform: scale(.95) translateY(12px); }
+  .card.is-back { z-index: 3; transform: scale(.90) translateY(24px); }
+
+  .card img {
+    width: 100%; height: 60%;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+  .card .no-image {
+    width: 100%; height: 60%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem; background: #0f3460;
+  }
+
+  .card-body { padding: 16px 18px; }
+  .card-body h2 { font-size: 1.25rem; font-weight: 700; line-height: 1.3; margin-bottom: 6px; }
+  .card-body .meta {
+    font-size: .8rem; color: var(--subtext); margin-bottom: 10px;
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .card-body .tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .card-body .tag {
+    background: #0f3460; color: #90caf9;
+    font-size: .72rem; padding: 3px 9px; border-radius: 999px;
+  }
+  .card-body .desc {
+    margin-top: 10px; font-size: .85rem; color: var(--subtext);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* swipe overlays */
+  .stamp {
+    position: absolute; top: 28px;
+    font-size: 2rem; font-weight: 900;
+    border: 4px solid; border-radius: 8px;
+    padding: 4px 14px; opacity: 0;
+    pointer-events: none; z-index: 20;
+    text-transform: uppercase; letter-spacing: 2px;
+    transition: opacity .1s;
+  }
+  .stamp.like  { right: 24px; color: var(--like-color); border-color: var(--like-color); }
+  .stamp.skip  { left: 24px;  color: var(--skip-color);  border-color: var(--skip-color);  }
+
+  /* ── buttons ── */
+  #buttons {
+    display: flex; gap: 24px; margin-top: 28px;
+  }
+  .btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: none; cursor: pointer;
+    font-size: 1.6rem;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+    transition: transform .1s, box-shadow .1s;
+  }
+  .btn:active { transform: scale(.92); box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .btn.skip-btn { background: #2d1b1b; color: var(--skip-color); }
+  .btn.like-btn { background: #1b2d1b; color: var(--like-color); }
+
+  /* ── hint ── */
+  #hint { margin-top: 16px; font-size: .75rem; color: #555; text-align: center; }
+
+  /* ── screens ── */
+  .screen {
+    display: none; flex-direction: column; align-items: center;
+    text-align: center; padding: 40px 28px; max-width: 440px;
+    gap: 16px;
+  }
+  .screen.active { display: flex; }
+  .screen h2 { font-size: 1.6rem; font-weight: 700; }
+  .screen p  { color: var(--subtext); line-height: 1.5; }
+
+  #liked-list { width: 100%; text-align: left; }
+  #liked-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2a4a;
+    font-size: .95rem;
+    list-style: none;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #liked-list li .star { color: gold; }
+
+  .big-btn {
+    margin-top: 8px; padding: 14px 32px;
+    background: #4caf50; color: #fff;
+    border: none; border-radius: 999px;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; box-shadow: 0 4px 16px rgba(76,175,80,.4);
+    transition: transform .1s;
+  }
+  .big-btn:active { transform: scale(.96); }
+  .big-btn:disabled { background: #555; box-shadow: none; cursor: default; }
+
+  #waiting-msg { color: var(--subtext); font-size: .9rem; }
+  #error-msg { color: var(--skip-color); }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="screen active" id="screen-loading">
+  <div style="font-size:3rem">🍽️</div>
+  <h2>Loading this week's picks…</h2>
+</div>
+
+<!-- Error -->
+<div class="screen" id="screen-error">
+  <div style="font-size:3rem">😕</div>
+  <h2>Something went wrong</h2>
+  <p id="error-msg"></p>
+</div>
+
+<!-- Swipe -->
+<div id="swipe-ui" style="display:none; flex-direction:column; align-items:center;">
+  <div id="header">
+    <h1>🍽️ Dinner Picks</h1>
+    <span id="progress"></span>
+  </div>
+  <div id="stack"></div>
+  <div id="buttons">
+    <button class="btn skip-btn" id="btn-skip" title="Skip (←)">✕</button>
+    <button class="btn like-btn" id="btn-like" title="Like (→)">♥</button>
+  </div>
+  <div id="hint">← skip &nbsp;|&nbsp; like →</div>
+</div>
+
+<!-- Summary -->
+<div class="screen" id="screen-summary">
+  <div style="font-size:3rem">🎉</div>
+  <h2>Your picks!</h2>
+  <p>Review your selections, then submit to lock them in.</p>
+  <ul id="liked-list"></ul>
+  <button class="big-btn" id="btn-submit">Submit my picks</button>
+  <p id="waiting-msg" style="display:none"></p>
+</div>
+
+<!-- Done -->
+<div class="screen" id="screen-done">
+  <div style="font-size:3rem">✅</div>
+  <h2>You're all set!</h2>
+  <p id="done-msg"></p>
+</div>
+
+<script>
+(() => {
+  // ── config ────────────────────────────────────────────────────────────────
+  const API_BASE = '/api';   // proxied by Nginx to FastAPI
+
+  const params = new URLSearchParams(location.search);
+  const USER   = params.get('user') || 'jacob';
+  const WEEK   = params.get('week') || mondayISO();
+
+  function mondayISO() {
+    const d = new Date();
+    d.setDate(d.getDate() - d.getDay() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // ── state ─────────────────────────────────────────────────────────────────
+  let recipes = [];
+  let current = 0;
+  const liked   = [];
+  const skipped = [];
+
+  // drag state
+  let dragging = false, startX = 0, startY = 0, dx = 0;
+
+  // ── screen helpers ────────────────────────────────────────────────────────
+  function show(id) {
+    ['screen-loading','screen-error','swipe-ui','screen-summary','screen-done']
+      .forEach(s => {
+        const el = document.getElementById(s);
+        if (s === 'swipe-ui') el.style.display = (s === id ? 'flex' : 'none');
+        else el.classList.toggle('active', s === id);
+      });
+  }
+
+  function showError(msg) {
+    document.getElementById('error-msg').textContent = msg;
+    show('screen-error');
+  }
+
+  // ── load batch ────────────────────────────────────────────────────────────
+  async function loadBatch() {
+    try {
+      const res = await fetch(`${API_BASE}/batch?week=${WEEK}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.status === 'complete') {
+        showDone('The meal plan for this week is already set. Check your email for details!');
+        return;
+      }
+      recipes = data.recipes || [];
+      if (!recipes.length) { showError('No recipes found for this week.'); return; }
+      buildStack();
+      show('swipe-ui');
+    } catch (e) {
+      showError(e.message);
+    }
+  }
+
+  // ── card rendering ────────────────────────────────────────────────────────
+  function buildStack() {
+    const stack = document.getElementById('stack');
+    stack.innerHTML = '';
+    const visible = recipes.slice(current, current + 3);
+    visible.reverse().forEach((r, i) => {
+      const card = makeCard(r);
+      const cls = ['is-back','is-next','is-top'][i];
+      card.classList.add(cls);
+      if (cls === 'is-top') attachDrag(card);
+      stack.appendChild(card);
+    });
+    updateProgress();
+  }
+
+  function makeCard(r) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.dataset.slug = r.slug;
+
+    const imgEl = r.image
+      ? `<img src="${r.image}" alt="${r.name}" onerror="this.parentNode.querySelector('.no-image').style.display='flex';this.remove()">`
+      : '';
+    const noImg = `<div class="no-image" ${r.image ? 'style="display:none"' : ''}>🍴</div>`;
+    const cookTime = r.cook_time ? `⏱ ${r.cook_time}` : '';
+    const tags = (r.tags || []).slice(0, 5)
+      .map(t => `<span class="tag">${t}</span>`).join('');
+    const desc = r.description
+      ? `<div class="desc">${r.description}</div>` : '';
+
+    card.innerHTML = `
+      ${imgEl}${noImg}
+      <div class="stamp like">LIKE ♥</div>
+      <div class="stamp skip">SKIP ✕</div>
+      <div class="card-body">
+        <h2>${r.name}</h2>
+        <div class="meta">
+          ${cookTime ? `<span>${cookTime}</span>` : ''}
+          ${r.source_url ? `<a href="${r.source_url}" target="_blank" style="color:#90caf9;font-size:.75rem">View recipe ↗</a>` : ''}
+        </div>
+        <div class="tags">${tags}</div>
+        ${desc}
+      </div>`;
+    return card;
+  }
+
+  function updateProgress() {
+    document.getElementById('progress').textContent =
+      `${current + 1} / ${recipes.length}`;
+  }
+
+  // ── swipe logic ───────────────────────────────────────────────────────────
+  function swipe(direction) {
+    if (current >= recipes.length) return;
+    const r = recipes[current];
+    if (direction === 'right') liked.push(r.slug);
+    else skipped.push(r.slug);
+    current++;
+    if (current >= recipes.length) showSummary();
+    else buildStack();
+  }
+
+  // ── drag ─────────────────────────────────────────────────────────────────
+  function attachDrag(card) {
+    const onStart = (x, y) => { dragging = true; startX = x; startY = y; dx = 0; card.style.transition = 'none'; };
+    const onMove  = (x, y) => {
+      if (!dragging) return;
+      dx = x - startX;
+      const dy = y - startY;
+      const rot = dx * 0.08;
+      card.style.transform = `translate(${dx}px, ${dy * 0.3}px) rotate(${rot}deg)`;
+      const likeSt = card.querySelector('.stamp.like').style;
+      const skipSt = card.querySelector('.stamp.skip').style;
+      if (dx > 20)       { likeSt.opacity = Math.min((dx - 20) / 60, 1); skipSt.opacity = 0; }
+      else if (dx < -20) { skipSt.opacity = Math.min((-dx - 20) / 60, 1); likeSt.opacity = 0; }
+      else               { likeSt.opacity = 0; skipSt.opacity = 0; }
+    };
+    const onEnd = () => {
+      if (!dragging) return;
+      dragging = false;
+      card.style.transition = '';
+      if (dx > 80) flyOut(card, 'right');
+      else if (dx < -80) flyOut(card, 'left');
+      else { card.style.transform = ''; card.querySelector('.stamp.like').style.opacity = 0; card.querySelector('.stamp.skip').style.opacity = 0; }
+    };
+
+    // Mouse
+    card.addEventListener('mousedown',  e => onStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    window.addEventListener('mouseup',   onEnd);
+
+    // Touch
+    card.addEventListener('touchstart', e => { const t = e.touches[0]; onStart(t.clientX, t.clientY); }, { passive: true });
+    card.addEventListener('touchmove',  e => { const t = e.touches[0]; onMove(t.clientX, t.clientY); },  { passive: true });
+    card.addEventListener('touchend',   onEnd);
+  }
+
+  function flyOut(card, direction) {
+    const x = direction === 'right' ? '150%' : '-150%';
+    card.style.transition = 'transform .35s ease-in, opacity .35s';
+    card.style.transform  = `translate(${x}, -10%) rotate(${direction === 'right' ? 25 : -25}deg)`;
+    card.style.opacity = '0';
+    setTimeout(() => swipe(direction), 300);
+  }
+
+  // ── keyboard ──────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') swipe('right');
+    if (e.key === 'ArrowLeft')  swipe('left');
+  });
+
+  document.getElementById('btn-like').addEventListener('click', () => swipe('right'));
+  document.getElementById('btn-skip').addEventListener('click', () => swipe('left'));
+
+  // ── summary ───────────────────────────────────────────────────────────────
+  function showSummary() {
+    const list = document.getElementById('liked-list');
+    list.innerHTML = '';
+    if (!liked.length) {
+      list.innerHTML = '<li>You skipped everything! Maybe try again?</li>';
+    } else {
+      liked.forEach(slug => {
+        const r = recipes.find(x => x.slug === slug);
+        const li = document.createElement('li');
+        li.innerHTML = `<span class="star">♥</span>${r ? r.name : slug}`;
+        list.appendChild(li);
+      });
+    }
+    show('screen-summary');
+  }
+
+  // ── submit ────────────────────────────────────────────────────────────────
+  document.getElementById('btn-submit').addEventListener('click', async () => {
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    try {
+      const res = await fetch(`${API_BASE}/swipe-results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: USER, week: WEEK, liked, skipped }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      if (data.both_done) {
+        showDone('Both of you have picked! The meal plan and shopping list are being generated. Check your email for the final plan.');
+      } else {
+        const other = USER === 'jacob' ? 'your wife' : 'Jacob';
+        showDone(`Your picks are in! Waiting for ${other} to finish. The plan will be set once both of you have swiped (or by Wednesday evening).`);
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Submit my picks';
+      alert(`Error: ${e.message}`);
+    }
+  });
+
+  function showDone(msg) {
+    document.getElementById('done-msg').textContent = msg;
+    show('screen-done');
+  }
+
+  // ── init ──────────────────────────────────────────────────────────────────
+  loadBatch();
+})();
+</script>
+</body>
+</html>
