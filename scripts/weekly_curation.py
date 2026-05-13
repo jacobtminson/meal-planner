@@ -126,24 +126,27 @@ def main():
     recipes = search_spoonacular(params, count=BATCH_SIZE + 4)  # fetch extra in case some fail import
     print(f"[curation] Spoonacular returned {len(recipes)} recipes")
 
-    slugs = []
+    batch = []
     for recipe in recipes:
         source_url = recipe.get("sourceUrl") or recipe.get("spoonacularSourceUrl", "")
         if not source_url:
             continue
         slug = mealie.import_from_url(source_url)
         if slug:
-            slugs.append(slug)
+            batch.append({
+                "slug": slug,
+                "image": recipe.get("image", ""),  # Spoonacular CDN URL
+            })
             print(f"[curation] Imported: {recipe.get('title')} → {slug}")
-        if len(slugs) >= BATCH_SIZE:
+        if len(batch) >= BATCH_SIZE:
             break
 
-    if not slugs:
+    if not batch:
         print("[curation] ERROR: No recipes could be imported. Aborting.")
         sys.exit(1)
 
-    print(f"[curation] Imported {len(slugs)} recipes into Mealie")
-    db.create_session(week, slugs)
+    print(f"[curation] Imported {len(batch)} recipes into Mealie")
+    db.create_session(week, batch)
     notify.send_swipe_invites(week)
     print(f"[curation] Done — invites sent for week {week}")
 

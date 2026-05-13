@@ -38,16 +38,15 @@ def get_recipe(slug: str) -> dict:
     return _get(f"/api/recipes/{slug}")
 
 
-def get_recipe_card(slug: str) -> dict:
+def get_recipe_card(slug: str, override_image: str | None = None) -> dict:
     """Return just the fields needed for the swipe UI card."""
     r = get_recipe(slug)
     recipe_id = r.get("id", slug)
-    # image field is the filename stored by Mealie (e.g. "original.webp"), or None
-    image_file = r.get("image")
-    image_url = (
-        f"/mealie-media/recipes/{recipe_id}/images/{image_file}"
-        if image_file else None
-    )
+    version = r.get("image")  # short token e.g. "kxDE"
+    if version:
+        image_url = f"/mealie-media/recipes/{recipe_id}/images/min-original.webp?rnd=1&version={version}"
+    else:
+        image_url = override_image or None
     return {
         "slug": slug,
         "name": r.get("name", slug),

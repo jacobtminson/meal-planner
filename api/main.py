@@ -50,9 +50,11 @@ def get_batch(week: Optional[str] = None):
         raise HTTPException(404, f"No session found for week {week}")
 
     cards = []
-    for slug in session["batch_slugs"]:
+    for item in session["batch_slugs"]:
+        slug = item["slug"]
+        override_image = item.get("image") or None
         try:
-            cards.append(mealie.get_recipe_card(slug))
+            cards.append(mealie.get_recipe_card(slug, override_image=override_image))
         except Exception as exc:
             print(f"[api] Could not fetch card for {slug}: {exc}")
 

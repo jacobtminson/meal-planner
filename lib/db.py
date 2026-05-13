@@ -38,7 +38,12 @@ def get_session(week: str) -> dict | None:
     if row is None:
         return None
     d = dict(row)
-    d["batch_slugs"] = json.loads(d["batch_slugs"] or "[]")
+    batch = json.loads(d["batch_slugs"] or "[]")
+    # Normalise: old sessions stored plain strings, new ones store {slug, image} dicts
+    d["batch_slugs"] = [
+        item if isinstance(item, dict) else {"slug": item, "image": ""}
+        for item in batch
+    ]
     d["jacob_liked"] = json.loads(d["jacob_liked"] or "[]")
     d["wife_liked"] = json.loads(d["wife_liked"] or "[]")
     return d
