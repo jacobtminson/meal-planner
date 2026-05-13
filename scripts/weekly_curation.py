@@ -35,8 +35,6 @@ def get_spoonacular_params(pantry: list[str], prefs: dict) -> dict:
     """Call Gemini to translate preference signals into Spoonacular query params."""
     prompt = f"""You are helping plan weekly dinners for a couple who love variety and healthy eating.
 
-Pantry items they already have (favor using these):
-{', '.join(pantry) if pantry else 'none listed'}
 
 Preference signals:
 - Jacob consistently enjoys: {', '.join(prefs['jacob']['strong_likes']) or 'no data yet'}
@@ -47,6 +45,7 @@ Preference signals:
 - Recently shown (avoid repeating for 2 weeks): {', '.join(prefs['recently_shown']) or 'none'}
 
 If preference history is sparse, optimize for variety across proteins, cuisines, and cook times.
+Emphasize full meals with relatively high protein content.
 
 Return ONLY a JSON object — no explanation, no markdown fences:
 {{
