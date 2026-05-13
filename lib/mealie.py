@@ -4,6 +4,7 @@ import requests
 from typing import Optional
 
 _BASE = os.environ["MEALIE_URL"].rstrip("/")
+_PUBLIC = os.environ.get("MEALIE_PUBLIC_URL", _BASE).rstrip("/")
 _HEADERS = {"Authorization": f"Bearer {os.environ['MEALIE_TOKEN']}"}
 
 
@@ -45,7 +46,7 @@ def get_recipe_card(slug: str) -> dict:
         "slug": slug,
         "name": r.get("name", slug),
         "description": r.get("description", ""),
-        "image": f"{_BASE}/api/media/recipes/{slug}/images/original.webp",
+        "image": f"{_PUBLIC}/api/media/recipes/{slug}/images/original.webp",
         "cook_time": r.get("performTime") or r.get("totalTime") or "",
         "tags": [t["name"] for t in (r.get("tags") or [])],
         "source_url": r.get("orgURL", ""),
@@ -98,11 +99,11 @@ def generate_shopping_list(week: str, slugs: list[str]) -> Optional[str]:
 # ── pantry ────────────────────────────────────────────────────────────────────
 
 def get_pantry() -> list[str]:
-    """Return a list of ingredient names currently in the pantry."""
+    """Return a list of food/ingredient names from Mealie's foods database."""
     try:
-        data = _get("/api/households/ingredient-foods", perPage=200)
-        items = data.get("items", data) if isinstance(data, dict) else data
+        data = _get("/api/foods", perPage=200)
+        items = data.get("items", []) if isinstance(data, dict) else data
         return [item["name"] for item in items if item.get("name")]
     except Exception as exc:
-        print(f"[mealie] Failed to fetch pantry: {exc}")
+        print(f"[mealie] Failed to fetch foods: {exc}")
         return []
