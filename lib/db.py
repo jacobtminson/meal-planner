@@ -87,7 +87,11 @@ def update_preferences(session: dict) -> None:
     today = date.today().isoformat()
     jacob_liked = set(session["jacob_liked"])
     wife_liked = set(session["wife_liked"])
-    all_shown = set(session["batch_slugs"])
+    # batch_slugs entries may be dicts {slug, image} or plain strings
+    all_shown = {
+        item["slug"] if isinstance(item, dict) else item
+        for item in session["batch_slugs"]
+    }
 
     with _conn() as con:
         for slug in all_shown:
