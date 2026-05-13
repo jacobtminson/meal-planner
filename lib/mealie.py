@@ -25,6 +25,9 @@ def import_from_url(url: str) -> Optional[str]:
     """Import a recipe from a URL. Returns the Mealie slug, or None on failure."""
     try:
         result = _post("/api/recipes/create/url", {"url": url})
+        # Mealie v2 returns the slug as a plain string
+        if isinstance(result, str):
+            return result
         return result.get("slug") or result.get("id")
     except Exception as exc:
         print(f"[mealie] Failed to import {url}: {exc}")
