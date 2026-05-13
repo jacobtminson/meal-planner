@@ -41,11 +41,18 @@ def get_recipe(slug: str) -> dict:
 def get_recipe_card(slug: str) -> dict:
     """Return just the fields needed for the swipe UI card."""
     r = get_recipe(slug)
+    recipe_id = r.get("id", slug)
+    # image field is the filename stored by Mealie (e.g. "original.webp"), or None
+    image_file = r.get("image")
+    image_url = (
+        f"/mealie-media/recipes/{recipe_id}/images/{image_file}"
+        if image_file else None
+    )
     return {
         "slug": slug,
         "name": r.get("name", slug),
         "description": r.get("description", ""),
-        "image": f"/mealie-media/recipes/{slug}/images/original.webp",
+        "image": image_url,
         "cook_time": r.get("performTime") or r.get("totalTime") or "",
         "tags": [t["name"] for t in (r.get("tags") or [])],
         "source_url": r.get("orgURL", ""),

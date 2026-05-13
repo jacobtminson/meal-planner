@@ -33,11 +33,15 @@ systemctl enable meals-api
 systemctl start meals-api
 systemctl status meals-api --no-pager || true
 
-echo "==> Installing Nginx config"
-sed "s|/opt/meals|$PROJECT|g" "$PROJECT/deploy/nginx-meals.conf" \
-    > /etc/nginx/sites-available/meals.conf
-ln -sf /etc/nginx/sites-available/meals.conf /etc/nginx/sites-enabled/meals.conf
-nginx -t && systemctl reload nginx
+if [ ! -f /etc/nginx/sites-available/meals.conf ]; then
+    echo "==> Installing Nginx config (first time)"
+    sed "s|/opt/meals|$PROJECT|g" "$PROJECT/deploy/nginx-meals.conf" \
+        > /etc/nginx/sites-available/meals.conf
+    ln -sf /etc/nginx/sites-available/meals.conf /etc/nginx/sites-enabled/meals.conf
+    nginx -t && systemctl reload nginx
+else
+    echo "==> Nginx config already exists — skipping (edit /etc/nginx/sites-available/meals.conf manually)"
+fi
 
 echo ""
 echo "Done! Next steps:"
