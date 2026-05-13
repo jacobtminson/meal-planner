@@ -4,7 +4,6 @@ import requests
 from typing import Optional
 
 _BASE = os.environ["MEALIE_URL"].rstrip("/")
-_PUBLIC = os.environ.get("MEALIE_PUBLIC_URL", _BASE).rstrip("/")
 _HEADERS = {"Authorization": f"Bearer {os.environ['MEALIE_TOKEN']}"}
 
 
@@ -46,7 +45,7 @@ def get_recipe_card(slug: str) -> dict:
         "slug": slug,
         "name": r.get("name", slug),
         "description": r.get("description", ""),
-        "image": f"{_PUBLIC}/api/media/recipes/{slug}/images/original.webp",
+        "image": f"/mealie-media/recipes/{slug}/images/original.webp",
         "cook_time": r.get("performTime") or r.get("totalTime") or "",
         "tags": [t["name"] for t in (r.get("tags") or [])],
         "source_url": r.get("orgURL", ""),
