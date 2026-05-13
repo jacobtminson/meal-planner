@@ -27,9 +27,15 @@ def init():
             wife_submitted   INTEGER DEFAULT 0,
             jacob_liked      TEXT,
             wife_liked       TEXT,
+            meal_count       INTEGER DEFAULT 5,
             status           TEXT DEFAULT 'pending'
         );
     """)
+    # Migrate existing DBs that predate the meal_count column
+    try:
+        conn.execute("ALTER TABLE weekly_sessions ADD COLUMN meal_count INTEGER DEFAULT 5")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
     print(f"Database initialised at {DB_PATH}")

@@ -28,8 +28,9 @@ def generate_meal_plan(session: dict) -> None:
 
     print(f"[meal_plan] Plan for {week}: {len(plan)} recipes ({len(both_liked)} jointly loved)")
 
-    mealie.add_to_meal_plan(week, plan)
-    shopping_list_id = mealie.generate_shopping_list(week, plan)
+    meal_count = session.get("meal_count") or 5
+    mealie.add_to_meal_plan(week, plan, meal_count=meal_count)
+    shopping_list_id = mealie.generate_shopping_list(week, plan[:meal_count])
 
     db.update_preferences(session)
 

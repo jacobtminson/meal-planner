@@ -129,6 +129,23 @@
   .btn.skip-btn { background: #2d1b1b; color: var(--skip-color); }
   .btn.like-btn { background: #1b2d1b; color: var(--like-color); }
 
+  /* ── meal count picker ── */
+  .meal-count-btn {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    border: 2px solid #2a2a4a;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.2rem; font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .meal-count-btn:hover { border-color: #90caf9; }
+  .meal-count-btn.selected {
+    background: #4caf50; border-color: #4caf50; color: #fff;
+    transform: scale(1.1);
+  }
+
   /* ── hint ── */
   #hint { margin-top: 16px; font-size: .75rem; color: #555; text-align: center; }
 
@@ -173,6 +190,22 @@
 <div class="screen active" id="screen-loading">
   <div style="font-size:3rem">🍽️</div>
   <h2>Loading this week's picks…</h2>
+</div>
+
+<!-- Meal count picker -->
+<div class="screen" id="screen-meal-count">
+  <div style="font-size:3rem">📅</div>
+  <h2>How many dinners at home this week?</h2>
+  <p>We'll build your grocery list around this.</p>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:8px;">
+    <button class="meal-count-btn" data-count="2">2</button>
+    <button class="meal-count-btn" data-count="3">3</button>
+    <button class="meal-count-btn" data-count="4">4</button>
+    <button class="meal-count-btn" data-count="5">5</button>
+    <button class="meal-count-btn" data-count="6">6</button>
+    <button class="meal-count-btn" data-count="7">7</button>
+  </div>
+  <button class="big-btn" id="btn-start-swipe" disabled>Start swiping →</button>
 </div>
 
 <!-- Error -->
@@ -231,6 +264,7 @@
   // ── state ─────────────────────────────────────────────────────────────────
   let recipes = [];
   let current = 0;
+  let mealCount = 0;
   const liked   = [];
   const skipped = [];
 
@@ -239,7 +273,7 @@
 
   // ── screen helpers ────────────────────────────────────────────────────────
   function show(id) {
-    ['screen-loading','screen-error','swipe-ui','screen-summary','screen-done']
+    ['screen-loading','screen-error','screen-meal-count','swipe-ui','screen-summary','screen-done']
       .forEach(s => {
         const el = document.getElementById(s);
         if (s === 'swipe-ui') el.style.display = (s === id ? 'flex' : 'none');
@@ -251,6 +285,21 @@
     document.getElementById('error-msg').textContent = msg;
     show('screen-error');
   }
+
+  // ── meal count picker ─────────────────────────────────────────────────────
+  document.querySelectorAll('.meal-count-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.meal-count-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      mealCount = parseInt(btn.dataset.count);
+      document.getElementById('btn-start-swipe').disabled = false;
+    });
+  });
+
+  document.getElementById('btn-start-swipe').addEventListener('click', () => {
+    buildStack();
+    show('swipe-ui');
+  });
 
   // ── load batch ────────────────────────────────────────────────────────────
   async function loadBatch() {
@@ -264,8 +313,7 @@
       }
       recipes = data.recipes || [];
       if (!recipes.length) { showError('No recipes found for this week.'); return; }
-      buildStack();
-      show('swipe-ui');
+      show('screen-meal-count');
     } catch (e) {
       showError(e.message);
     }
@@ -412,7 +460,7 @@
       const res = await fetch(`${API_BASE}/swipe-results`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: USER, week: WEEK, liked, skipped }),
+        body: JSON.stringify({ user: USER, week: WEEK, liked, skipped, meal_count: mealCount }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();

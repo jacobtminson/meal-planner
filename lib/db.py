@@ -49,15 +49,16 @@ def get_session(week: str) -> dict | None:
     return d
 
 
-def write_votes(user: str, week: str, liked: list[str], skipped: list[str]) -> dict:
+def write_votes(user: str, week: str, liked: list[str], skipped: list[str],
+                meal_count: int = 5) -> dict:
     """Record one user's votes. Returns the updated session."""
     col_submitted = f"{user}_submitted"
     col_liked = f"{user}_liked"
     with _conn() as con:
         con.execute(
-            f"UPDATE weekly_sessions SET {col_submitted}=1, {col_liked}=?"
+            f"UPDATE weekly_sessions SET {col_submitted}=1, {col_liked}=?, meal_count=?"
             "  WHERE week=? AND status='pending'",
-            (json.dumps(liked), week),
+            (json.dumps(liked), meal_count, week),
         )
     return get_session(week)
 

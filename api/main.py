@@ -81,10 +81,11 @@ def session_status(week: Optional[str] = None):
 
 
 class SwipeResults(BaseModel):
-    user: str       # 'jacob' or 'wife'
+    user: str           # 'jacob' or 'wife'
     week: str
     liked: list[str]
     skipped: list[str]
+    meal_count: int = 5
 
 
 @app.post("/swipe-results")
@@ -104,6 +105,7 @@ def swipe_results(body: SwipeResults):
         week=body.week,
         liked=body.liked,
         skipped=body.skipped,
+        meal_count=body.meal_count,
     )
 
     both_done = bool(session["jacob_submitted"]) and bool(session["wife_submitted"])

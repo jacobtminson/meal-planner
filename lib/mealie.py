@@ -60,15 +60,20 @@ def get_recipe_card(slug: str, override_image: str | None = None) -> dict:
 
 # ── meal plan ──────────────────────────────────────────────────────────────────
 
-def add_to_meal_plan(week: str, slugs: list[str]) -> None:
-    """Add each recipe to the meal plan for the given week (as dinners Mon–Sun)."""
+def add_to_meal_plan(week: str, slugs: list[str], meal_count: int | None = None) -> None:
+    """Add each recipe to the meal plan for the given week.
+
+    meal_count limits how many recipes get assigned (e.g. 4 means Mon–Thu only).
+    Recipes are assigned to consecutive weekdays starting Monday.
+    """
     from datetime import date, timedelta
     monday = date.fromisoformat(week)
-    for i, slug in enumerate(slugs):
-        day = (monday + timedelta(days=i % 7)).isoformat()
+    plan_slugs = slugs[:meal_count] if meal_count else slugs
+    for i, slug in enumerate(plan_slugs):
+        day = (monday + timedelta(days=i)).isoformat()
         recipe = get_recipe(slug)
         try:
-            _post("/api/meal-plans/", {
+            _post("/api/households/mealplans", {
                 "date": day,
                 "entryType": "dinner",
                 "recipeId": recipe["id"],
